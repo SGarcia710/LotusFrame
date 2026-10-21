@@ -5,6 +5,7 @@ Marcos de jugador y objetivo estilizados para **WoW Classic Era** (1.15.x), insp
 - Modelo 3D sobre la barra de vida, con vida y poder siempre visibles.
 - Puntos de combo y porcentaje de vida del objetivo (en rojo bajo 20 %, zona de Ejecutar).
 - Auras del objetivo y del jugador (beneficios y perjuicios), encima de cada marco, en dos estilos: íconos con contador y animación de reloj, o barras que se vacían.
+- Alerta de poca vida: tu marco late con un borde rojo cuando tu vida baja del porcentaje que elijas (con sonido opcional).
 - Se mueven con el Modo edición de Blizzard o con Shift + arrastrar.
 - Panel de ajustes en Opciones > AddOns > LotusFrames.
 

@@ -7,10 +7,12 @@ panel.name = "LotusFrames"
 panel:Hide()
 
 local widgets = {}
-local function Opt() return ns.GetDB().auras end
+-- Cada control guarda su valor en una tabla de la DB: "auras" (por defecto) o "alert"
+local function Opt(group) return ns.GetDB()[group or "auras"] end
 
 local function Changed()
 	ns.RefreshAuras()
+	ns.RefreshAlert()
 end
 
 ---------------------------------------------------------------------------
@@ -24,18 +26,17 @@ local function Label(parent, text, size, r, g, b)
 	return fs
 end
 
-local function Checkbox(key, text, x, y, onChange)
+local function Checkbox(key, text, x, y, group)
 	local cb = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
 	cb:SetSize(26, 26)
 	cb:SetPoint("TOPLEFT", x, y)
 	local label = Label(panel, text)
 	label:SetPoint("LEFT", cb, "RIGHT", 4, 1)
 	cb:SetScript("OnClick", function(self)
-		Opt()[key] = self:GetChecked() and true or false
-		if onChange then onChange() end
+		Opt(group)[key] = self:GetChecked() and true or false
 		Changed()
 	end)
-	cb.Refresh = function(self) self:SetChecked(Opt()[key]) end
+	cb.Refresh = function(self) self:SetChecked(Opt(group)[key]) end
 	widgets[#widgets + 1] = cb
 	return cb
 end
@@ -56,12 +57,12 @@ local function Radio(key, value, text, x, y)
 	return cb
 end
 
-local function Slider(key, text, minV, maxV, x, y)
+local function Slider(key, text, minV, maxV, x, y, group, width)
 	local label = Label(panel, text)
 	label:SetPoint("TOPLEFT", x, y)
 	local s = CreateFrame("Slider", nil, panel, "BackdropTemplate")
 	s:SetOrientation("HORIZONTAL")
-	s:SetSize(240, 17)
+	s:SetSize(width or 240, 17)
 	s:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -6)
 	s:SetBackdrop({
 		bgFile = "Interface\\Buttons\\UI-SliderBar-Background",
@@ -84,14 +85,14 @@ local function Slider(key, text, minV, maxV, x, y)
 	s:SetScript("OnValueChanged", function(self, v)
 		v = math.floor(v + 0.5)
 		value:SetText(v)
-		if self.refreshing or Opt()[key] == v then return end
-		Opt()[key] = v
+		if self.refreshing or Opt(group)[key] == v then return end
+		Opt(group)[key] = v
 		Changed()
 	end)
 	s.Refresh = function(self)
 		self.refreshing = true
-		self:SetValue(Opt()[key])
-		value:SetText(Opt()[key])
+		self:SetValue(Opt(group)[key])
+		value:SetText(Opt(group)[key])
 		self.refreshing = false
 	end
 	widgets[#widgets + 1] = s
@@ -104,10 +105,15 @@ end
 
 local title = Label(panel, "LotusFrames", "big")
 title:SetPoint("TOPLEFT", 16, -16)
-local subtitle = Label(panel, "Auras (beneficios y perjuicios) encima de los marcos del objetivo y del jugador.", nil, 0.8, 0.8, 0.8)
+local subtitle = Label(panel, "Auras (beneficios y perjuicios) encima de los marcos y alerta de poca vida.", nil, 0.8, 0.8, 0.8)
 subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
 
 Checkbox("enabled", "Mostrar auras del objetivo", 16, -64)
+
+-- Alerta de poca vida (columna derecha): borde rojo que late alrededor de mi marco
+Checkbox("enabled", "Alerta de poca vida", 396, -64, "alert")
+Slider("percent", "Por debajo de (% de vida)", 5, 80, 400, -104, "alert", 170)
+Checkbox("sound", "Con sonido", 396, -160, "alert")
 
 local styleTitle = Label(panel, "Estilo", nil, 1, 0.82, 0)
 styleTitle:SetPoint("TOPLEFT", 20, -104)

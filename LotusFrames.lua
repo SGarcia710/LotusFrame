@@ -22,6 +22,10 @@ local DEFAULTS = {
 	target = { "TOPLEFT", "UIParent", "TOPLEFT", 280, -20 },
 }
 
+-- Alerta de poca vida del jugador (configurable en las opciones)
+local ALERT_DEFAULTS = { enabled = true, percent = 30, sound = false }
+local LOW_HEALTH_SOUND = SOUNDKIT and SOUNDKIT.RAID_WARNING or 8959
+
 -- Paleta de ElvUI
 local COLORS = {
 	friendly = { 0.29, 0.68, 0.30 },
@@ -127,6 +131,25 @@ local function HealthColor(unit)
 	return unpack(COLORS.hostile)
 end
 
+-- Solo el marco del jugador tiene alerta; el sonido suena una vez al cruzar el limite
+local function UpdateLowHealth(f)
+	local alert = f.lowHealth
+	if not alert then return end
+	local o, unit = db.alert, f.unit
+	local cur, max = UnitHealth(unit), UnitHealthMax(unit)
+	local low = o.enabled and max > 0 and not UnitIsDeadOrGhost(unit) and cur <= max * o.percent / 100
+	if low == alert.active then return end
+	alert.active = low
+	if low then
+		alert:Show()
+		alert.pulse:Play()
+		if o.sound then PlaySound(LOW_HEALTH_SOUND, "Master") end
+	else
+		alert.pulse:Stop()
+		alert:Hide()
+	end
+end
+
 local function UpdateHealth(f)
 	local unit = f.unit
 	local cur, max = UnitHealth(unit), UnitHealthMax(unit)
@@ -158,6 +181,8 @@ local function UpdateHealth(f)
 			f.percentText:SetText("")
 		end
 	end
+
+	UpdateLowHealth(f)
 end
 
 local function UpdatePower(f)
@@ -348,6 +373,14 @@ local function Layout(f)
 
 	if ns.LayoutAuras then ns.LayoutAuras(f) end
 
+	if f.lowHealth then
+		local edge = px * 3
+		f.lowHealth:SetBackdrop({ edgeFile = FLAT, edgeSize = edge })
+		f.lowHealth:SetBackdropBorderColor(1, 0.1, 0.1, 1)
+		f.lowHealth:SetPoint("TOPLEFT", -edge, edge)
+		f.lowHealth:SetPoint("BOTTOMRIGHT", edge, -edge)
+	end
+
 	if f.combo then
 		f.combo:SetBackdrop({ bgFile = FLAT, edgeFile = FLAT, edgeSize = px })
 		f.combo:SetBackdropColor(0, 0, 0, 1)
@@ -460,6 +493,18 @@ local function CreatePlayerFrame()
 	f.stateIcon:SetPoint("RIGHT", f.info, "RIGHT", -4, 0)
 	f.stateIcon:Hide()
 
+	-- Alerta de poca vida: borde rojo que late alrededor del marco
+	f.lowHealth = CreateFrame("Frame", nil, f, "BackdropTemplate")
+	f.lowHealth:SetFrameLevel(f:GetFrameLevel() + 20)
+	f.lowHealth:Hide()
+	local pulse = f.lowHealth:CreateAnimationGroup()
+	pulse:SetLooping("BOUNCE")
+	local fade = pulse:CreateAnimation("Alpha")
+	fade:SetFromAlpha(1)
+	fade:SetToAlpha(0.2)
+	fade:SetDuration(0.45)
+	f.lowHealth.pulse = pulse
+
 	f:RegisterEvent("PLAYER_ENTERING_WORLD")
 	f:RegisterEvent("PLAYER_REGEN_DISABLED")
 	f:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -542,6 +587,10 @@ loader:SetScript("OnEvent", function(self, event, arg1)
 		LotusFramesDB = LotusFramesDB or {}
 		db = LotusFramesDB
 		db.scale = db.scale or DEFAULTS.scale
+		db.alert = db.alert or {}
+		for k, v in pairs(ALERT_DEFAULTS) do
+			if db.alert[k] == nil then db.alert[k] = v end
+		end
 		ns.InitAuraDB(db)
 	elseif event == "UI_SCALE_CHANGED" or event == "DISPLAY_SIZE_CHANGED" then
 		if frames.player and not InCombatLockdown() then ApplyScale() end
@@ -655,6 +704,10 @@ function ns.RefreshAuras()
 		ns.LayoutAuras(f)
 		ns.UpdateAuras(f)
 	end
+end
+
+function ns.RefreshAlert()
+	if frames.player then UpdateLowHealth(frames.player) end
 end
 
 SLASH_LOTUSFRAMES1 = "/lotus"
