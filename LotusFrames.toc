@@ -1,6 +1,6 @@
 ## Interface: 11508, 11509
 ## Title: LotusFrames
-## Notes: Marcos de jugador y objetivo estilizados, con numeros de vida y poder siempre visibles y auras del objetivo.
+## Notes: Marcos de jugador y objetivo estilizados, con numeros de vida y poder siempre visibles y auras del objetivo y del jugador.
 ## Author: Lotush
 ## Version: 1.1
 ## SavedVariables: LotusFramesDB

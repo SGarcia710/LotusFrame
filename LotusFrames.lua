@@ -247,7 +247,7 @@ local function UpdateState(f)
 	end
 end
 
--- Las auras del objetivo viven en Auras.lua (iconos o barras, configurables)
+-- Las auras del objetivo y del jugador viven en Auras.lua (iconos o barras, configurables)
 local function UpdateAuras(f)
 	if ns.UpdateAuras then ns.UpdateAuras(f) end
 end
@@ -451,6 +451,7 @@ end
 
 local function CreatePlayerFrame()
 	local f = CreateUnitFrame("player", false)
+	ns.CreateAuras(f)
 
 	-- Icono de combate / descansando en el panel de info
 	f.stateIcon = f.info:CreateTexture(nil, "OVERLAY")
@@ -650,10 +651,10 @@ function ns.PaintPreview(f)
 end
 
 function ns.RefreshAuras()
-	local f = frames.target
-	if not f then return end
-	ns.LayoutAuras(f)
-	ns.UpdateAuras(f)
+	for _, f in pairs(frames) do
+		ns.LayoutAuras(f)
+		ns.UpdateAuras(f)
+	end
 end
 
 SLASH_LOTUSFRAMES1 = "/lotus"

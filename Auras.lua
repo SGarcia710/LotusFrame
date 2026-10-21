@@ -1,4 +1,4 @@
--- LotusFrames: auras (beneficios y perjuicios) del objetivo, encima del marco.
+-- LotusFrames: auras (beneficios y perjuicios) del objetivo y del jugador, encima de cada marco.
 -- Dos estilos como ElvUI:
 --   * iconos: contador de tiempo dentro y animacion de reloj que avanza
 --   * barras: icono + nombre + tiempo, con una barra que se va vaciando
@@ -12,6 +12,8 @@ ns.AURA_DEFAULTS = {
 	debuffs = true,
 	buffs = true,
 	onlyMine = false,  -- solo perjuicios lanzados por mi
+	playerBuffs = true,   -- mis beneficios encima de mi marco
+	playerDebuffs = true, -- mis perjuicios encima de mi marco
 	showTimer = true,
 	size = 28,         -- tamano de icono
 	perRow = 7,
@@ -299,19 +301,21 @@ function ns.SetAuraPreview(on)
 		UnregisterUnitWatch(f)
 		f:Show()
 		if not UnitExists(f.unit) and ns.PaintPreview then ns.PaintPreview(f) end
-		previewTicker = C_Timer.NewTicker(1, function() ns.UpdateAuras(f) end)
+		previewTicker = C_Timer.NewTicker(1, function()
+			for _, fr in pairs(ns.frames) do ns.UpdateAuras(fr) end
+		end)
 	elseif not ns.editing then
 		RegisterUnitWatch(f)
 	end
 	ns.RefreshAuras()
 end
 
-local function CollectPreview(list, o)
+local function CollectPreview(list, debuffs, buffs)
 	local now = GetTime()
 	for _, s in ipairs(SAMPLES) do
 		local name, icon = SpellName(s[1], s[6]), s[7]
 		local isDebuff = s[4] == "HARMFUL"
-		if (isDebuff and o.debuffs) or (not isDebuff and o.buffs) then
+		if (isDebuff and debuffs) or (not isDebuff and buffs) then
 			-- cada aura se "renueva" al terminar para que la animacion siga
 			local elapsed = (now - previewStart) % s[2]
 			list[#list + 1] = {
@@ -336,13 +340,18 @@ end
 function ns.UpdateAuras(f)
 	if not f.auraHolder then return end
 	local o = Opt()
+	-- el marco del jugador tiene sus propias casillas; el objetivo, las de siempre
+	local enabled, debuffs, buffs, onlyMine = o.enabled, o.debuffs, o.buffs, o.onlyMine
+	if f.unit == "player" then
+		enabled, debuffs, buffs, onlyMine = true, o.playerDebuffs, o.playerBuffs, false
+	end
 	wipe(collected)
 	if ns.preview then
-		CollectPreview(collected, o)
-	elseif o.enabled and UnitExists(f.unit) then
+		CollectPreview(collected, debuffs, buffs)
+	elseif enabled and UnitExists(f.unit) then
 		-- con "solo mis perjuicios" usamos el filtro PLAYER del juego
-		if o.debuffs then Collect(f.unit, o.onlyMine and "HARMFUL|PLAYER" or "HARMFUL", collected, o) end
-		if o.buffs then Collect(f.unit, "HELPFUL", collected, o) end
+		if debuffs then Collect(f.unit, onlyMine and "HARMFUL|PLAYER" or "HARMFUL", collected, o) end
+		if buffs then Collect(f.unit, "HELPFUL", collected, o) end
 		if o.style == "bars" then
 			-- barras: las que se acaban antes, abajo (mas cerca del marco); las permanentes al final
 			table.sort(collected, function(a, b)

@@ -104,7 +104,7 @@ end
 
 local title = Label(panel, "LotusFrames", "big")
 title:SetPoint("TOPLEFT", 16, -16)
-local subtitle = Label(panel, "Auras (beneficios y perjuicios) encima del marco del objetivo.", nil, 0.8, 0.8, 0.8)
+local subtitle = Label(panel, "Auras (beneficios y perjuicios) encima de los marcos del objetivo y del jugador.", nil, 0.8, 0.8, 0.8)
 subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
 
 Checkbox("enabled", "Mostrar auras del objetivo", 16, -64)
@@ -113,13 +113,18 @@ local styleTitle = Label(panel, "Estilo", nil, 1, 0.82, 0)
 styleTitle:SetPoint("TOPLEFT", 20, -104)
 Radio("style", "icons", "Iconos (contador dentro y animación de reloj)", 20, -124)
 Radio("style", "bars", "Barras (ícono, nombre, tiempo y barra que se vacía)", 20, -148)
+Checkbox("showTimer", "Mostrar el tiempo restante", 16, -172)
 
-local showTitle = Label(panel, "Qué mostrar", nil, 1, 0.82, 0)
-showTitle:SetPoint("TOPLEFT", 20, -186)
-Checkbox("debuffs", "Perjuicios", 16, -204)
-Checkbox("onlyMine", "Solo mis perjuicios (p. ej. tu Hender armadura)", 36, -230)
-Checkbox("buffs", "Beneficios", 16, -256)
-Checkbox("showTimer", "Mostrar el tiempo restante", 16, -282)
+local showTitle = Label(panel, "Objetivo", nil, 1, 0.82, 0)
+showTitle:SetPoint("TOPLEFT", 20, -212)
+Checkbox("debuffs", "Perjuicios", 16, -230)
+Checkbox("onlyMine", "Solo mis perjuicios (p. ej. tu Hender armadura)", 36, -256)
+Checkbox("buffs", "Beneficios", 16, -282)
+
+local playerTitle = Label(panel, "Mi marco", nil, 1, 0.82, 0)
+playerTitle:SetPoint("TOPLEFT", 400, -212)
+Checkbox("playerBuffs", "Beneficios", 396, -230)
+Checkbox("playerDebuffs", "Perjuicios", 396, -256)
 
 local sizeTitle = Label(panel, "Tamaño", nil, 1, 0.82, 0)
 sizeTitle:SetPoint("TOPLEFT", 20, -322)
@@ -140,7 +145,7 @@ previewBtn:SetScript("OnClick", function(self)
 	if not ok then print("|cffff4040LotusFrames error:|r " .. tostring(err)) end
 	self:SetText(ns.preview and "Ocultar vista previa" or "Vista previa")
 end)
-local previewHelp = Label(panel, "Muestra auras de ejemplo en el marco del objetivo para probar los ajustes.", nil, 0.7, 0.7, 0.7)
+local previewHelp = Label(panel, "Muestra auras de ejemplo en los marcos para probar los ajustes.", nil, 0.7, 0.7, 0.7)
 previewHelp:SetPoint("LEFT", previewBtn, "RIGHT", 10, 0)
 
 panel:SetScript("OnShow", function()
