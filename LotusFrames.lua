@@ -202,6 +202,50 @@ local function UpdatePower(f)
 	end
 end
 
+-- Nombre y puntos de un arbol de talentos del jugador. En 1.15.8 Blizzard cambio
+-- GetTalentTabInfo por C_SpecializationInfo.GetSpecializationInfo; se usa la que exista.
+local function TalentTree(i, group)
+	local S = C_SpecializationInfo
+	if S and S.GetSpecializationInfo then
+		local _, name, _, _, _, _, points = S.GetSpecializationInfo(i, false, false, nil, nil, group)
+		if points then return name, points end
+	end
+	if GetTalentTabInfo then
+		local a, b, c, _, e = GetTalentTabInfo(i, false, false, group)
+		if type(a) == "number" then return b, e end -- id, nombre, descripcion, icono, puntos
+		return a, c                                   -- nombre, icono, puntos
+	end
+end
+
+-- En Classic no hay especializacion como tal: se toma el arbol con mas puntos ("Armas", "Furia"...)
+local function PlayerSpec()
+	local S = C_SpecializationInfo
+	local group = (S and S.GetActiveSpecGroup and S.GetActiveSpecGroup(false, false))
+		or (GetActiveTalentGroup and GetActiveTalentGroup(false, false))
+	local best, bestPoints = nil, 0
+	for i = 1, (GetNumTalentTabs and GetNumTalentTabs() or 3) do
+		local name, points = TalentTree(i, group)
+		if name and points and points > bestPoints then best, bestPoints = name, points end
+	end
+	return best
+end
+
+-- "(Guerrero - Armas)" en el color de la clase. Classic Era no envia los talentos de otros
+-- jugadores al inspeccionarlos, asi que de ellos solo se muestra la clase.
+local function ClassText(unit)
+	local className, class = UnitClass(unit)
+	if not className then return "" end
+	-- si la API de talentos falla en alguna version, el nombre igual se muestra con la clase
+	local spec
+	if UnitIsUnit(unit, "player") then
+		local ok, result = pcall(PlayerSpec)
+		spec = ok and result or nil
+	end
+	local c = RAID_CLASS_COLORS[class]
+	local color = c and Hex(c.r, c.g, c.b) or "|cffffffff"
+	return color .. "(" .. (spec and (className .. " - " .. spec) or className) .. ")|r"
+end
+
 local function UpdateInfo(f)
 	local unit = f.unit
 	local level = UnitLevel(unit)
@@ -231,6 +275,7 @@ local function UpdateInfo(f)
 	end
 
 	local name = UnitName(unit) or ""
+	if UnitIsPlayer(unit) then name = name .. " " .. ClassText(unit) end
 	f.infoText:SetText("") -- fuerza a redibujar aunque el texto sea igual
 	if f.mirrored then
 		f.infoText:SetText(name .. "  " .. Hex(r, g, b) .. levelText .. "|r")
@@ -316,13 +361,20 @@ local UNIT_EVENTS = {
 	UNIT_MODEL_CHANGED = UpdatePortrait,
 }
 
+-- Al gastar puntos o cambiar de talentos se actualiza la especializacion del nombre
+local TALENT_EVENTS = {
+	PLAYER_TALENT_UPDATE = true,
+	CHARACTER_POINTS_CHANGED = true,
+	ACTIVE_TALENT_GROUP_CHANGED = true,
+}
+
 local function OnEvent(f, event, ...)
 	local handler = UNIT_EVENTS[event]
 	if handler then
 		handler(f)
 	elseif event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" or event == "PLAYER_UPDATE_RESTING" then
 		UpdateState(f)
-	elseif event == "PLAYER_LEVEL_UP" then
+	elseif event == "PLAYER_LEVEL_UP" or TALENT_EVENTS[event] then
 		UpdateInfo(f)
 	elseif event == "PLAYER_COMBO_POINTS" then
 		UpdateCombo(f)
@@ -510,6 +562,9 @@ local function CreatePlayerFrame()
 	f:RegisterEvent("PLAYER_REGEN_ENABLED")
 	f:RegisterEvent("PLAYER_UPDATE_RESTING")
 	f:RegisterEvent("PLAYER_LEVEL_UP")
+	for event in pairs(TALENT_EVENTS) do
+		pcall(f.RegisterEvent, f, event)
+	end
 	return f
 end
 

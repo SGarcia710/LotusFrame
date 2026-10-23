@@ -3,6 +3,7 @@
 Marcos de jugador y objetivo estilizados para **WoW Classic Era** (1.15.x), inspirados en ElvUI.
 
 - Modelo 3D sobre la barra de vida, con vida y poder siempre visibles.
+- Clase al lado del nombre de los jugadores, en su color; en tu marco también tu especialización (el árbol de talentos con más puntos). Classic Era no deja ver los talentos de otros jugadores, así que de ellos solo sale la clase.
 - Puntos de combo y porcentaje de vida del objetivo (en rojo bajo 20 %, zona de Ejecutar).
 - Auras del objetivo y del jugador (beneficios y perjuicios), encima de cada marco, en dos estilos: íconos con contador y animación de reloj, o barras que se vacían.
 - Alerta de poca vida: tu marco late con un borde rojo cuando tu vida baja del porcentaje que elijas (con sonido opcional).
